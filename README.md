@@ -9,8 +9,7 @@ pip install librosa
 pip install tensorflow
 pip install pandas
 pip install matplotlib
-
-
+pip install tqdm
 
 
 %
