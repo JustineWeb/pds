@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import random
 import os
 import fnmatch
@@ -30,7 +31,7 @@ def find_files(directory, pattern='*.mp3', sample=None, sub_dir=None):
 
     if sub_dir!=None :
         for c in sub_dir :
-            directories.append(directory+c+"/")
+            directories.append(directory + c + "/")
     else :
         directories.append(directory)
 
@@ -47,3 +48,44 @@ def find_files(directory, pattern='*.mp3', sample=None, sub_dir=None):
              the number of first n samples to take.")
     else :
         return files
+
+
+def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_dir=None):
+    '''Recursively finds all files matching the pattern.'''
+    # subdir sould be a string, for example "abc03",
+    # meaning we take data from directories a,b,c,0 and 3
+
+    files = []
+    groups = []
+    directories = []
+
+    # TODO : add lines to check format of input
+    # TODO : try/except ?
+
+    if sub_dir!=None :
+        for c in sub_dir :
+            directories.append(directory + c + "/")
+    else :
+        directories.append(directory)
+
+    for path in directories :
+        for root, dirnames, filenames in os.walk(path):
+            for filename in fnmatch.filter(filenames, pattern):
+                files.append(os.path.join(root, filename))
+
+    # add randomization here maybe
+
+    total_nb = len(files)
+    if sample != None:
+        total_nb = sample
+    nb_full_groups, rest = np.divmod(total_nb, group_size)
+
+    for i in range(nb_full_groups) :
+        # add randomization here of files[i:i+group_size] maybe
+        groups.append(files[i * group_size : (i+1) * group_size])
+
+    # handle last group if group_size doesn't divide the total number of files
+    if rest != 0:
+        groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
+
+    return groups
