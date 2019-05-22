@@ -125,7 +125,7 @@ def check_overlaps(label_headers, label_data):
 
 # ---------------------------------------------#
 
-def label_stats(labels, header) :
+def label_stats(labels, header, plot=False) :
     nb_labels_per_song = labels.iloc[:,1:-1].astype(int).sum(axis=1)
 
     nb_song_per_label = labels.iloc[:,1:-1].astype(int).sum(axis=0)
@@ -134,18 +134,19 @@ def label_stats(labels, header) :
     label_header_by_freq = np.asarray(nb_song_per_label.index)
 
     # plotting
-    fig = plt.figure(figsize=(16,6))
+    if plot :
+        fig = plt.figure(figsize=(16,6))
 
-    plot_nb = 70
+        plot_nb = 70
 
-    y_pos = np.arange(plot_nb)
-    plt.bar(y_pos, nb_song_per_label[:plot_nb], align='center', alpha=0.5)
-    plt.xticks(y_pos, nb_song_per_label[:plot_nb])
-    plt.ylabel('Occurence')
-    plt.title('Label histogram')
-    plt.xticks(np.arange(plot_nb), label_header_by_freq[:plot_nb], rotation=90, fontsize = 13)
+        y_pos = np.arange(plot_nb)
+        plt.bar(y_pos, nb_song_per_label[:plot_nb], align='center', alpha=0.5)
+        plt.xticks(y_pos, nb_song_per_label[:plot_nb])
+        plt.ylabel('Occurence')
+        plt.title('Label histogram')
+        plt.xticks(np.arange(plot_nb), label_header_by_freq[:plot_nb], rotation=90, fontsize = 13)
 
-    plt.show()
+        plt.show()
 
     print("Number of songs : " , labels.shape[0])
     print("Number of labels : " , labels.shape[1]-2) # -2 is for index columns and mp3 path column
