@@ -3,6 +3,7 @@ import numpy as np
 import random
 import os
 import fnmatch
+import time
 
 def load_labels(labels_file_name):
     pd.read_csv(labels_file_name)
@@ -89,3 +90,31 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
         groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
 
     return groups
+
+# Function to lead the labels file (csv)
+def load_and_clean_labels(labels_path):
+    start = time.time()
+    labels = pd.read_csv(labels_path, sep = '"\t"')
+    end = time.time()
+    print("Loading csv file : {:.3}".format(end-start))
+
+    # Prepare header to put back in the end
+    # remove quotes and take all columns except the first one
+    header = list(map(lambda x : x.replace('"', ''), labels))[1:]
+    # add back the first column, separated in two
+    header = ['clip_id', 'no_voice']+header
+    # create dictionary
+    header = dict(enumerate(header))
+
+    # Solve format problem : two first columns are merged
+    # extract first column and rest
+    left, right = labels['"clip_id\t""no voice"'], labels.iloc[:, 1:]
+    # split first column in two part at separator "\t"
+    split = left.str.split(pat = "\t", expand=True).replace('"', '')
+
+    # put back the first column which is now two, with the rest
+    cleaned = pd.concat([split, right], axis=1, ignore_index=True)
+    # clean by removing quotes and add back header
+    cleaned = cleaned.apply(lambda col : col.apply(lambda x : x.replace('"', ''))).rename(columns = header)
+
+    return cleaned, header
