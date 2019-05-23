@@ -52,6 +52,41 @@ def find_files(directory, pattern='*.mp3', sample=None, sub_dir=None):
     else :
         return files
 
+def find_files_select(directory, labels, labels_name, pattern='*.mp3', sample=None, sub_dir=None):
+    '''Recursively finds all files matching the pattern.'''
+    # subdir sould be a string, for example "abc03",
+    # meaning we take data from directories a,b,c,0 and 3
+    _, select_filenames = sublabels(labels_name, labels)
+
+    # remove the c/ at the beginning of each filename for comparison later
+    select_filenames = [s[2:] for s in select_filenames.values]
+    files = []
+    directories = []
+
+    # TODO : add lines to check format of input
+    # TODO : try/except ?
+
+    if sub_dir!=None :
+        for c in sub_dir :
+            directories.append(directory + c + "/")
+    else :
+        directories.append(directory)
+
+    for path in directories :
+        for root, dirnames, filenames in os.walk(path):
+            for filename in fnmatch.filter(filenames, pattern):
+                if filename in select_filenames :
+                    files.append(os.path.join(root, filename))
+
+    if sample!=None :
+        try:
+            return files[:sample]
+        except TypeError:
+            print("Argument sample should be either None, or an integer :\
+             the number of first n samples to take.")
+    else :
+        return files
+
 
 def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_dir=None):
     '''Recursively finds all files matching the pattern.'''
@@ -92,6 +127,69 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
         groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
 
     return groups
+
+def find_files_group_select(directory, labels, labels_name, group_size, pattern='*.mp3', sample=None, sub_dir=None):
+    '''Recursively finds all files matching the pattern.'''
+    # subdir sould be a string, for example "abc03",
+    # meaning we take data from directories a,b,c,0 and 3
+
+    _, select_filenames = sublabels(labels_name, labels)
+    # remove the c/ at the beginning of each filename for comparison later
+    select_filenames = [s[2:] for s in select_filenames.values]
+    
+    files = []
+    groups = []
+    directories = []
+
+    # TODO : add lines to check format of input
+    # TODO : try/except ?
+
+    if sub_dir!=None :
+        for c in sub_dir :
+            directories.append(directory + c + "/")
+    else :
+        directories.append(directory)
+
+    for path in directories :
+        for root, dirnames, filenames in os.walk(path):
+            for filename in fnmatch.filter(filenames, pattern):
+                if files in select_filenames :
+                    files.append(os.path.join(root, filename))
+
+    # add randomization here maybe
+
+    total_nb = len(files)
+    if sample != None:
+        total_nb = sample
+    nb_full_groups, rest = np.divmod(total_nb, group_size)
+
+    for i in range(nb_full_groups) :
+        # add randomization here of files[i:i+group_size] maybe
+        groups.append(files[i * group_size : (i+1) * group_size])
+
+    # handle last group if group_size doesn't divide the total number of files
+    if rest != 0:
+        groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
+
+    return groups
+
+
+def sublabels(labels_name, labels):
+
+    labels_name_ext = [n for n in labels_name]
+    labels_name_ext.append('mp3_path')
+    select_labels = labels[labels_name_ext]
+
+    rows = pd.concat((select_labels[lab] == '1' for lab in labels_name), axis=1).any(axis=1)
+
+    select_labels = select_labels[rows]
+
+    #select_tags = select_labels[:-1]
+    select_filenames = select_labels['mp3_path']
+    print("All labels : {} songs >>> Selected for given labels : {}.".format(len(labels),len(select_labels)))
+
+    return select_labels, select_filenames
+
 
 # Function to lead the labels file (csv)
 def load_and_clean_labels(labels_path):
@@ -189,7 +287,7 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
     return audios, tags
 
 # selective version of above function
-def load_audio_label_aux_selective(labels, filenames, prefix_len, labels_name, nb_labels, \
+def load_audio_label_aux_selective(labels, filenames, dir_path, prefix_len, labels_name, nb_labels, \
                          file_type, batch_size, nb_batch):
 
     assert (file_type=="wav" or file_type=="mp3"), "The argument file_type should be either 'wav', either 'mp3'."
@@ -214,14 +312,6 @@ def load_audio_label_aux_selective(labels, filenames, prefix_len, labels_name, n
     tags = np.ndarray(shape=(nb_songs * nb_batch, nb_labels), dtype=np.float32, order='F')
 
     #count = 0
-    select_labels = labels[labels_name]
-    rows = pd.concat((select_labels[lab] == 1 for lab in labels_name), axis=1).any(axis=1)
-    print(type(rows))
-    print("OKKKKKKK")
-    #select_labels = select_labels[rows]
-
-    filenames_select = labels.loc[rows]['mp3_path']
-    print(len(filenames_select))
 
     idx = 0
 
@@ -240,10 +330,10 @@ def load_audio_label_aux_selective(labels, filenames, prefix_len, labels_name, n
             # take labels of corresponding song
 
             if file_type=="mp3" :
-                select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:]]
+                tag  = labels.loc[labels['mp3_path']==f]
 
             if file_type=="wav" :
-                select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:-4]+".mp3"]
+                tag  = labels.loc[labels['mp3_path']==f[:-4]+".mp3"]
 
             # select wanted labels
             # >> selective version : only songs with at least one label
@@ -251,7 +341,8 @@ def load_audio_label_aux_selective(labels, filenames, prefix_len, labels_name, n
             # other verison to try ?
             # select_labels = select_labels.loc[(select_labels[labels_name] == 1).any(axis=1)]
             audios[idx] = audio[n*batch_size: (n+1)*batch_size,:]
-            tags[idx] = select_labels.values.reshape(nb_labels)
+            print(tag.values)
+            tags[idx] = tag.values.reshape(nb_labels)
 
             idx +=1
 
