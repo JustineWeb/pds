@@ -186,3 +186,81 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
     #print()
 
     return audios, tags
+
+# selective version of above function
+def load_audio_label_aux_selective(labels, filenames, prefix_len, labels_name, nb_labels, \
+                         file_type, batch_size, nb_batch):
+
+    assert (file_type=="wav" or file_type=="mp3"), "The argument file_type should be either 'wav', either 'mp3'."
+
+    if nb_labels < 2 :
+        print("The function load_audio_label_aux_selective should only be called when picking \
+        at least 2 labels.")
+        return
+
+    nb_songs = len(filenames)
+
+    if nb_songs > 20 :
+        warnings.warn("The argument num_song should not be too high (above 20), make sure this will \
+        not cause memory error.", FutureWarning, stacklevel=2)
+
+
+    print("Loading {} songs ...".format(nb_songs))
+
+    start = time.time()
+
+    audios = np.ndarray(shape=(nb_songs * nb_batch, batch_size, 1), dtype=np.float32, order='F')
+    tags = np.ndarray(shape=(nb_songs * nb_batch, nb_labels), dtype=np.float32, order='F')
+
+    #count = 0
+    select_labels = labels[labels_name]
+    rows = pd.concat((select_labels[lab] == 1 for lab in labels_name), axis=1).any(axis=1)
+    print(rows)
+    select_labels = select_labels[rows]
+
+    idx = 0
+
+    for f in filenames:
+
+        # Load audio (MP3/WAV) file
+        try :
+            audio, _ = librosa.load(f, sr=None, mono=True)
+        except EOFError :
+            print("EOFERROR : The following file could not be loaded with librosa - ", f)
+
+        audio = audio.reshape(-1, 1)
+
+        for n in range(nb_batch) :
+
+            # take labels of corresponding song
+
+            if file_type=="mp3" :
+                select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:]]
+
+            if file_type=="wav" :
+                select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:-4]+".mp3"]
+
+            # select wanted labels
+            # >> selective version : only songs with at least one label
+
+            # other verison to try ?
+            # select_labels = select_labels.loc[(select_labels[labels_name] == 1).any(axis=1)]
+            audios[idx] = audio[n*batch_size: (n+1)*batch_size,:]
+            tags[idx] = select_labels.values.reshape(nb_labels)
+
+            idx +=1
+
+        #count +=1
+        #if (count % 10) == 0:
+         #   print(count)
+
+    end = time.time()
+    duration = end-start
+
+    #print(">> Total loading time - {} songs : {:.2f} sec".format(nb_songs, duration))
+    #print()
+    #print("Shape of audios list :", audios.shape)
+    #print("Shape of tags list :", tags.shape)
+    #print()
+
+    return audios[rows], tags
