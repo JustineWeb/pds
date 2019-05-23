@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import random
 import os
+import warnings
 import fnmatch
 import time
 import librosa
@@ -215,8 +216,12 @@ def load_audio_label_aux_selective(labels, filenames, prefix_len, labels_name, n
     #count = 0
     select_labels = labels[labels_name]
     rows = pd.concat((select_labels[lab] == 1 for lab in labels_name), axis=1).any(axis=1)
-    print(rows)
-    select_labels = select_labels[rows]
+    print(type(rows))
+    print("OKKKKKKK")
+    #select_labels = select_labels[rows]
+
+    filenames_select = labels.loc[rows]['mp3_path']
+    print(len(filenames_select))
 
     idx = 0
 
