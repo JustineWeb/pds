@@ -136,7 +136,7 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     _, select_filenames = sublabels(labels_name, labels)
     # remove the c/ at the beginning of each filename for comparison later
     select_filenames = [s[2:] for s in select_filenames.values]
-    
+    #print(select_filenames)
     files = []
     groups = []
     directories = []
@@ -153,7 +153,7 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     for path in directories :
         for root, dirnames, filenames in os.walk(path):
             for filename in fnmatch.filter(filenames, pattern):
-                if files in select_filenames :
+                if filename in select_filenames :
                     files.append(os.path.join(root, filename))
 
     # add randomization here maybe
