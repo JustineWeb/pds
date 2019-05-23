@@ -4,6 +4,7 @@ import random
 import os
 import fnmatch
 import time
+import librosa
 
 def load_labels(labels_file_name):
     pd.read_csv(labels_file_name)
@@ -118,3 +119,70 @@ def load_and_clean_labels(labels_path):
     cleaned = cleaned.apply(lambda col : col.apply(lambda x : x.replace('"', ''))).rename(columns = header)
 
     return cleaned, header
+
+# Find files is done externally, here we give the file names as parameters
+def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, \
+                         file_type, batch_size, nb_batch):
+
+    assert (file_type=="wav" or file_type=="mp3"), "The argument file_type should be either 'wav', either 'mp3'."
+
+    nb_songs = len(filenames)
+
+    if nb_songs > 20 :
+        warnings.warn("The argument num_song should not be too high (above 20), make sure this will \
+        not cause memory error.", FutureWarning, stacklevel=2)
+
+
+    print("Loading {} songs ...".format(nb_songs))
+
+    start = time.time()
+
+    audios = np.ndarray(shape=(nb_songs * nb_batch, batch_size, 1), dtype=np.float32, order='F')
+    tags = np.ndarray(shape=(nb_songs * nb_batch, nb_labels), dtype=np.float32, order='F')
+
+    #count = 0
+
+    idx = 0
+
+    for f in filenames:
+
+        # Load audio (MP3/WAV) file
+        try :
+            audio, _ = librosa.load(f, sr=None, mono=True)
+        except EOFError :
+            print("EOFERROR : The following file could not be loaded with librosa - ", f)
+
+        audio = audio.reshape(-1, 1)
+
+        for n in range(nb_batch) :
+            audios[idx] = audio[n*batch_size: (n+1)*batch_size,:]
+
+            # take labels or corresponding song
+
+            if file_type=="mp3" :
+                select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:]]
+
+            if file_type=="wav" :
+                select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:-4]+".mp3"]
+
+            # select wanted labels
+            select_labels = select_labels[labels_name]
+
+            tags[idx] = select_labels.values.reshape(nb_labels)
+
+            idx +=1
+
+        #count +=1
+        #if (count % 10) == 0:
+         #   print(count)
+
+    end = time.time()
+    duration = end-start
+
+    #print(">> Total loading time - {} songs : {:.2f} sec".format(nb_songs, duration))
+    #print()
+    #print("Shape of audios list :", audios.shape)
+    #print("Shape of tags list :", tags.shape)
+    #print()
+
+    return audios, tags
