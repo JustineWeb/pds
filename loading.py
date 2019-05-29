@@ -259,6 +259,8 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
         if f == FILE_PLACEHOLDER :
             for n in range(nb_batch) :
                 audios[idx] = [[0]] * batch_size
+
+                # the values are very weird here eg [1.92838320e+31 2.35106045e-38]
                 tags[idx] = [0.0] * nb_labels
 
         else :
