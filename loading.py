@@ -7,6 +7,8 @@ import fnmatch
 import time
 import librosa
 
+FILE_PLACEHOLDER = "placeholder"
+
 def load_labels(labels_file_name):
     pd.read_csv(labels_file_name)
 
@@ -125,6 +127,10 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
     # handle last group if group_size doesn't divide the total number of files
     if rest != 0:
         groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
+        # "zero-padding" to make the last group in the shape expected by the nn
+        # > here we add a None element and when loading we check whether the files
+        # name is None and add zeros in that case
+        groups[nb_full_groups] += [FILE_PLACEHOLDER] * (group_size - rest)
 
     return groups
 
@@ -170,6 +176,11 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     # handle last group if group_size doesn't divide the total number of files
     if rest != 0:
         groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
+
+        # "zero-padding" to make the last group in the shape expected by the nn
+        # > here we add a None element and when loading we check whether the files
+        # name is None and add zeros in that case
+        groups[nb_full_groups] += [FILE_PLACEHOLDER] * (group_size - rest)
 
     return groups
 
@@ -245,31 +256,37 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
 
     for f in filenames:
 
-        # Load audio (MP3/WAV) file
-        try :
-            audio, _ = librosa.load(f, sr=None, mono=True)
-        except EOFError :
-            print("EOFERROR : The following file could not be loaded with librosa - ", f)
+        if f == FILE_PLACEHOLDER :
+            for n in range(nb_batch) :
+                audios[idx] = [[0]] * batch_size
+                tags[idx] = [0.0] * nb_labels
 
-        audio = audio.reshape(-1, 1)
+        else :
+            # Load audio (MP3/WAV) file
+            try :
+                audio, _ = librosa.load(f, sr=None, mono=True)
+            except EOFError :
+                print("EOFERROR : The following file could not be loaded with librosa - ", f)
 
-        for n in range(nb_batch) :
-            audios[idx] = audio[n*batch_size: (n+1)*batch_size,:]
+            audio = audio.reshape(-1, 1)
 
-            # take labels or corresponding song
+            for n in range(nb_batch) :
+                audios[idx] = audio[n*batch_size: (n+1)*batch_size,:]
 
-            if file_type=="mp3" :
-                select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:]]
+                # take labels or corresponding song
 
-            if file_type=="wav" :
-                select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:-4]+".mp3"]
+                if file_type=="mp3" :
+                    select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:]]
 
-            # select wanted labels
-            select_labels = select_labels[labels_name]
+                if file_type=="wav" :
+                    select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:-4]+".mp3"]
 
-            tags[idx] = select_labels.values.reshape(nb_labels)
+                # select wanted labels
+                select_labels = select_labels[labels_name]
 
-            idx +=1
+                tags[idx] = select_labels.values.reshape(nb_labels)
+
+                idx +=1
 
         #count +=1
         #if (count % 10) == 0:
@@ -283,7 +300,7 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
     #print("Shape of audios list :", audios.shape)
     #print("Shape of tags list :", tags.shape)
     #print()
-
+    print(tags.shape)
     return audios, tags
 
 # selective version of above function
