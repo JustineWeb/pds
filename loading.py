@@ -300,7 +300,6 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
     #print("Shape of audios list :", audios.shape)
     #print("Shape of tags list :", tags.shape)
     #print()
-    print(tags.shape)
     return audios, tags
 
 # selective version of above function
