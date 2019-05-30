@@ -243,7 +243,7 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
         not cause memory error.", FutureWarning, stacklevel=2)
 
 
-    print("Loading {} songs ...".format(nb_songs))
+    #print("Loading {} songs ...".format(nb_songs))
 
     start = time.time()
 
