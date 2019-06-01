@@ -137,14 +137,17 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
 def find_files_group_select(directory, labels, labels_name, group_size, pattern='*.mp3', sample=None, sub_dir=None):
     '''Recursively finds all files matching the pattern.'''
     # subdir sould be a string, for example "abc03",
-    # meaning we take data from directories a,b,c,0 and 3
+    # meaning we take data from directories a,b,c,0 and 3 >> useful if we want to separate between
+    # train and test sets for example
 
+    # extract all filenames from labels file for which there is at least
+    # one of the given labels.
     _, select_filenames = sublabels(labels_name, labels)
 
     # remove the c/ at the beginning of each filename for comparison
     # with label columns name later
     select_filenames = [s[2:] for s in select_filenames.values]
-    #print(select_filenames)
+
     files = []
     groups = []
     directories = []
@@ -152,6 +155,7 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     # TODO : add lines to check format of input
     # TODO : try/except ?
 
+    # iterate over all given subdirectories
     if sub_dir!=None :
         for c in sub_dir :
             directories.append(directory + c + "/")
@@ -161,6 +165,7 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     for path in directories :
         for root, dirnames, filenames in os.walk(path):
             for filename in fnmatch.filter(filenames, pattern):
+                # filter to take songs which only have at least one label
                 if filename in select_filenames :
                     files.append(os.path.join(root, filename))
 
@@ -169,8 +174,8 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     total_nb = len(files)
 
     if sample > total_nb :
-        warnings.warn("The argument sample should be smaller than the number of available songs. \
-        Otherwise it will simply be ignored. Make sure this is not an error.", FutureWarning, stacklevel=2)
+        warnings.warn("The argument sample should be smaller than the number of available songs ({}).\
+        Otherwise it will simply be ignored. Make sure this is not an error.".format(total_nb), FutureWarning, stacklevel=2)
 
     if sample != None and sample < total_nb :
         total_nb = sample
@@ -204,7 +209,8 @@ def sublabels(labels_name, labels):
 
     #select_tags = select_labels[:-1]
     select_filenames = select_labels['mp3_path']
-    print("All labels : {} songs >>> Selected for given labels : {}.".format(len(labels),len(select_labels)))
+    print("All labels : {} songs >>> Selected for given labels : {}. (test or train sets are note taken\
+    into account here)".format(len(labels),len(select_labels)))
 
     return select_labels, select_filenames
 
