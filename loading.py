@@ -140,7 +140,9 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     # meaning we take data from directories a,b,c,0 and 3
 
     _, select_filenames = sublabels(labels_name, labels)
-    # remove the c/ at the beginning of each filename for comparison later
+
+    # remove the c/ at the beginning of each filename for comparison
+    # with label columns name later
     select_filenames = [s[2:] for s in select_filenames.values]
     #print(select_filenames)
     files = []
@@ -165,7 +167,12 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     # add randomization here maybe
 
     total_nb = len(files)
-    if sample != None:
+
+    if sample > total_nb :
+        warnings.warn("The argument sample should be smaller than the number of available songs. \
+        Otherwise it will simply be ignored. Make sure this is not an error.", FutureWarning, stacklevel=2)
+
+    if sample != None and sample < total_nb :
         total_nb = sample
     nb_full_groups, rest = np.divmod(total_nb, group_size)
 
