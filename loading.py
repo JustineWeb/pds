@@ -255,9 +255,6 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
         warnings.warn("The argument num_song should not be too high (above 20), make sure this will \
         not cause memory error.", FutureWarning, stacklevel=2)
 
-    # only for debug >> delete later
-    if nb_songs < 20 :
-        print(filenames)
     #print("Loading {} songs ...".format(nb_songs))
 
     start = time.time()
