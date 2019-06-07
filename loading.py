@@ -125,6 +125,9 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
         groups.append(files[i * group_size : (i+1) * group_size])
 
     # handle last group if group_size doesn't divide the total number of files
+    # For now this never happens as the sample size is always made a multiple
+    # of the batch size. If one wants to adapt it, it should modify some part
+    # of function load_audio_label_aux.
     if rest != 0:
         groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
         # "zero-padding" to make the last group in the shape expected by the nn
@@ -186,6 +189,9 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
         groups.append(files[i * group_size : (i+1) * group_size])
 
     # handle last group if group_size doesn't divide the total number of files
+    # For now this never happens as the sample size is always made a multiple
+    # of the batch size. If one wants to adapt it, it should modify some part
+    # of function load_audio_label_aux.
     if rest != 0:
         groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
 
@@ -244,10 +250,13 @@ def load_and_clean_labels(labels_path):
     return cleaned, header
 
 # Find files is done externally, here we give the file names as parameters
-def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, \
-                         file_type, batch_size, nb_batch):
+def load_audio_label_aux(labels, filenames, prefix_len, config):
 
-    assert (file_type=="wav" or file_type=="mp3"), "The argument file_type should be either 'wav', either 'mp3'."
+    labels_name = config['labels_name']
+    nb_labels = config['nb_labels']
+    file_type = config['file_type']
+    chunk_size = config['chunk_size']
+    nb_chunks = config['nb_chunks']
 
     nb_songs = len(filenames)
 
@@ -259,8 +268,8 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
 
     start = time.time()
 
-    audios = np.ndarray(shape=(nb_songs * nb_batch, batch_size, 1), dtype=np.float32, order='F')
-    tags = np.ndarray(shape=(nb_songs * nb_batch, nb_labels), dtype=np.float32, order='F')
+    audios = np.ndarray(shape=(nb_songs * nb_chunks, chunk_size, 1), dtype=np.float32, order='F')
+    tags = np.ndarray(shape=(nb_songs * nb_chunks, nb_labels), dtype=np.float32, order='F')
 
     #count = 0
 
@@ -268,9 +277,11 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
 
     for f in filenames:
 
+        # For now this never happens as we always make the sample size be a multiple of the batch_size
+        # If one wants to adapt this it should modify it because it doesn't work the it is written here
         if f == FILE_PLACEHOLDER :
-            for n in range(nb_batch) :
-                audios[idx] = [[0]] * batch_size
+            for n in range(nb_chunks) :
+                audios[idx] = [[0]] * chunk_size
 
                 # the values are very weird here eg [1.92838320e+31 2.35106045e-38]
                 tags[idx] = [0.0] * nb_labels
@@ -284,8 +295,8 @@ def load_audio_label_aux(labels, filenames, prefix_len, labels_name, nb_labels, 
 
             audio = audio.reshape(-1, 1)
 
-            for n in range(nb_batch) :
-                audios[idx] = audio[n*batch_size: (n+1)*batch_size,:]
+            for n in range(nb_chunks) :
+                audios[idx] = audio[n*chunk_size: (n+1)*chunk_size,:]
 
                 # take labels or corresponding song
 
