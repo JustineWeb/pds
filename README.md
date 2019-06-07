@@ -14,13 +14,3 @@ The repository is organised in the following way :
 
 
 In order to understand the purpose of this work, I recommend reading the corresponding report : report.pdf.
-
-Installation setup in the environment (python 3.6)
-pip install librosa
-pip install tensorflow
-pip install pandas
-pip install matplotlib
-pip install tqdm
-
-
-%
