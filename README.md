@@ -6,6 +6,7 @@
 
 This project was originally a research project on the Wavenet neural network architecture from Google. We have decided to follow another path and focus on an other paper on music classification : End-to-end learning for music audio tagging at scale.
 
+In this repository you can find a folder named "python_files", which organizes the functions used into several files depending on their use. All code related to experiments is in the jupyter notebook "PDS_final.ipynb".
 
 Installation setup in the environment (python 3.6)
 pip install librosa
