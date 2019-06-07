@@ -1,4 +1,9 @@
 import tensorflow as tf
+from tools import *
+from ckpt_saving import *
+from loading import *
+from models import *
+from tqdm import tqdm_notebook as tqdm
 
 
 def initialize_tf_model(config, is_training=True) :
@@ -130,8 +135,7 @@ def train_and_load_restore(config, directories, labels, restore=False, restore_f
 
                     # Load audio and labels
                     tload0 = time.time()
-                    audios, tags = load_audio_label_aux(labels, g, len(data_dir), labels_name=labels_name, \
-                            nb_labels=nb_labels, file_type=file_type, batch_size=chunk_size, nb_batch=nb_chunks)
+                    audios, tags = load_audio_label_aux(labels, g, len(data_dir), config)
 
                     tload1 = time.time()
 
@@ -188,7 +192,7 @@ def train_and_load_restore(config, directories, labels, restore=False, restore_f
             duration2 = time.time()-start
             print("Total time: {:.2f} minutes.".format(duration2/60))
 
-    return train_loss_results, train_auc_results
+    return train_loss_results, train_auc_results, logdir
 
 
 
@@ -236,7 +240,7 @@ def testing_validing(config, directories, labels, model_ckpt, validation=False) 
     # GET NAME OF FILES FOR SONGS TO LOAD
     # use find_files_group_select which filters songs
     # which have at least one of the labels and create groups
-    files_by_group = find_files_group_select(data_dir, labels, labels_name, group_size, sample=sample_size, \
+    files_by_group = find_files_group_select(data_dir, labels, labels_name, batch_size, sample=sample_size, \
                                              pattern=pattern, sub_dir=test_dir)
 
     n_groups = len(files_by_group)
@@ -262,9 +266,6 @@ def testing_validing(config, directories, labels, model_ckpt, validation=False) 
         init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
 
         sess.run(init)
-
-        predicts = sess.run([predictions, train_op, reduced_loss, auc], \
-                            feed_dict={x: audios_test, y: tags_test})
 
         # START TESTING EACH GROUP
         try:
