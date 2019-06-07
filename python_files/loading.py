@@ -7,6 +7,7 @@ import fnmatch
 import time
 import librosa
 
+# not used
 FILE_PLACEHOLDER = "placeholder"
 
 def load_labels(labels_file_name):
@@ -18,11 +19,7 @@ def randomize_files(files):
         yield files[file_index]
 
 
-# ATTENTION : in the current configuration, everytime this function is called it goes through
-# all the sub-directories even if the sample is set to 6
-# it only prunes the output at the end
-# > there could be a more efficient way for doing this
-# TODO later
+# original version not used anymore
 def find_files(directory, pattern='*.mp3', sample=None, sub_dir=None):
     '''Recursively finds all files matching the pattern.'''
     # subdir sould be a string, for example "abc03",
@@ -30,9 +27,6 @@ def find_files(directory, pattern='*.mp3', sample=None, sub_dir=None):
 
     files = []
     directories = []
-
-    # TODO : add lines to check format of input
-    # TODO : try/except ?
 
     if sub_dir!=None :
         for c in sub_dir :
@@ -54,8 +48,11 @@ def find_files(directory, pattern='*.mp3', sample=None, sub_dir=None):
     else :
         return files
 
+# not used anymore
 def find_files_select(directory, labels, labels_name, pattern='*.mp3', sample=None, sub_dir=None):
-    '''Recursively finds all files matching the pattern.'''
+    '''Recursively finds all files matching the pattern,
+    Which are tagged with at least one of the labels in
+    the list labels, given as parameter.'''
     # subdir sould be a string, for example "abc03",
     # meaning we take data from directories a,b,c,0 and 3
     _, select_filenames = sublabels(labels_name, labels)
@@ -64,9 +61,6 @@ def find_files_select(directory, labels, labels_name, pattern='*.mp3', sample=No
     select_filenames = [s[2:] for s in select_filenames.values]
     files = []
     directories = []
-
-    # TODO : add lines to check format of input
-    # TODO : try/except ?
 
     if sub_dir!=None :
         for c in sub_dir :
@@ -90,17 +84,17 @@ def find_files_select(directory, labels, labels_name, pattern='*.mp3', sample=No
         return files
 
 
+# not used anymore
 def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_dir=None):
-    '''Recursively finds all files matching the pattern.'''
+    '''Recursively finds all files matching the pattern
+    And split them into groups of size groupe_size.
+    Useful for feeding group by group to th network.'''
     # subdir sould be a string, for example "abc03",
     # meaning we take data from directories a,b,c,0 and 3
 
     files = []
     groups = []
     directories = []
-
-    # TODO : add lines to check format of input
-    # TODO : try/except ?
 
     if sub_dir!=None :
         for c in sub_dir :
@@ -113,7 +107,7 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
             for filename in fnmatch.filter(filenames, pattern):
                 files.append(os.path.join(root, filename))
 
-    # add randomization here maybe
+    # Randomization should be added here
 
     total_nb = len(files)
     if sample != None:
@@ -121,7 +115,7 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
     nb_full_groups, rest = np.divmod(total_nb, group_size)
 
     for i in range(nb_full_groups) :
-        # add randomization here of files[i:i+group_size] maybe
+        # Randomization should be added here of files[i:i+group_size]
         groups.append(files[i * group_size : (i+1) * group_size])
 
     # handle last group if group_size doesn't divide the total number of files
@@ -137,8 +131,15 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
 
     return groups
 
+# This is the version currently used: a combination of all functionalities
+# provided in the above functions.
 def find_files_group_select(directory, labels, labels_name, group_size, pattern='*.mp3', sample=None, sub_dir=None):
-    '''Recursively finds all files matching the pattern.'''
+    '''Recursively finds all files matching the pattern,
+    which are tagged with at least one of the labels in
+    the list labels, given as parameter
+    and split them into groups of size groupe_size.
+    Useful for feeding group by group to th network.'''
+
     # subdir sould be a string, for example "abc03",
     # meaning we take data from directories a,b,c,0 and 3 >> useful if we want to separate between
     # train and test sets for example
@@ -155,9 +156,6 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     groups = []
     directories = []
 
-    # TODO : add lines to check format of input
-    # TODO : try/except ?
-
     # iterate over all given subdirectories
     if sub_dir!=None :
         for c in sub_dir :
@@ -172,7 +170,7 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
                 if filename in select_filenames :
                     files.append(os.path.join(root, filename))
 
-    # add randomization here maybe
+    # Randomization should be added here
 
     total_nb = len(files)
 
@@ -185,7 +183,7 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     nb_full_groups, rest = np.divmod(total_nb, group_size)
 
     for i in range(nb_full_groups) :
-        # add randomization here of files[i:i+group_size] maybe
+        # Randomization should be added here of files[i:i+group_size]
         groups.append(files[i * group_size : (i+1) * group_size])
 
     # handle last group if group_size doesn't divide the total number of files
@@ -213,7 +211,6 @@ def sublabels(labels_name, labels):
 
     select_labels = select_labels[rows]
 
-    #select_tags = select_labels[:-1]
     select_filenames = select_labels['mp3_path']
     print("All labels : {} songs >>> Selected for given labels : {}. (test or train sets are note taken\
     into account here)".format(len(labels),len(select_labels)))
@@ -221,7 +218,7 @@ def sublabels(labels_name, labels):
     return select_labels, select_filenames
 
 
-# Function to lead the labels file (csv)
+# Function to load the labels file (csv)
 def load_and_clean_labels(labels_path):
     start = time.time()
     labels = pd.read_csv(labels_path, sep = '"\t"')
@@ -251,6 +248,18 @@ def load_and_clean_labels(labels_path):
 
 # Find files is done externally, here we give the file names as parameters
 def load_audio_label_aux(labels, filenames, prefix_len, config):
+    '''Function for loading audios and labels.
+    "aux" stands for auxiliary because originally finding the filenames
+    was also done in the loading function.
+
+    - 'labels': pandas dataframe of all labels, containing a column for name of mp3 file.
+    - 'filenames': python list containing all filenames we wish to load
+    - 'prefix_len': length of part of the path we don't need (typically 12 for len(MTT/dataset/))
+    - 'config': dictionary containing all characteristics of input shape and model.
+
+    Usage example :
+    - load_audio_label_aux(labels, files_list, len(data_dir), BASIC_CONFIG)
+    '''
 
     labels_name = config['labels_name']
     nb_labels = config['nb_labels']
@@ -298,7 +307,7 @@ def load_audio_label_aux(labels, filenames, prefix_len, config):
             for n in range(nb_chunks) :
                 audios[idx] = audio[n*chunk_size: (n+1)*chunk_size,:]
 
-                # take labels or corresponding song
+                # take labels of corresponding song
 
                 if file_type=="mp3" :
                     select_labels  = labels.loc[labels['mp3_path']==f[prefix_len:]]
@@ -326,78 +335,3 @@ def load_audio_label_aux(labels, filenames, prefix_len, config):
     #print("Shape of tags list :", tags.shape)
     #print()
     return audios, tags
-
-# selective version of above function
-def load_audio_label_aux_selective(labels, filenames, dir_path, prefix_len, labels_name, nb_labels, \
-                         file_type, batch_size, nb_batch):
-
-    assert (file_type=="wav" or file_type=="mp3"), "The argument file_type should be either 'wav', either 'mp3'."
-
-    if nb_labels < 2 :
-        print("The function load_audio_label_aux_selective should only be called when picking \
-        at least 2 labels.")
-        return
-
-    nb_songs = len(filenames)
-
-    if nb_songs > 20 :
-        warnings.warn("The argument num_song should not be too high (above 20), make sure this will \
-        not cause memory error.", FutureWarning, stacklevel=2)
-
-
-    print("Loading {} songs ...".format(nb_songs))
-
-    start = time.time()
-
-    audios = np.ndarray(shape=(nb_songs * nb_batch, batch_size, 1), dtype=np.float32, order='F')
-    tags = np.ndarray(shape=(nb_songs * nb_batch, nb_labels), dtype=np.float32, order='F')
-
-    #count = 0
-
-    idx = 0
-
-    for f in filenames:
-
-        # Load audio (MP3/WAV) file
-        try :
-            audio, _ = librosa.load(f, sr=None, mono=True)
-        except EOFError :
-            print("EOFERROR : The following file could not be loaded with librosa - ", f)
-
-        audio = audio.reshape(-1, 1)
-
-        for n in range(nb_batch) :
-
-            # take labels of corresponding song
-
-            if file_type=="mp3" :
-                tag  = labels.loc[labels['mp3_path']==f]
-
-            if file_type=="wav" :
-                tag  = labels.loc[labels['mp3_path']==f[:-4]+".mp3"]
-
-            # select wanted labels
-            # >> selective version : only songs with at least one label
-
-            # other verison to try ?
-            # select_labels = select_labels.loc[(select_labels[labels_name] == 1).any(axis=1)]
-            audios[idx] = audio[n*batch_size: (n+1)*batch_size,:]
-            print(tag.values)
-            tags[idx] = tag.values.reshape(nb_labels)
-
-            idx +=1
-
-        #count +=1
-        #if (count % 10) == 0:
-         #   print(count)
-
-    end = time.time()
-    duration = end-start
-
-    #print(">> Total loading time - {} songs : {:.2f} sec".format(nb_songs, duration))
-    #print()
-    #print("Shape of audios list :", audios.shape)
-    #print("Shape of tags list :", tags.shape)
-    #print()
-
-    return audios[rows], tags

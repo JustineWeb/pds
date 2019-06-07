@@ -39,7 +39,7 @@ def train_and_load_restore(config, directories, labels, restore=False, restore_f
     '''Function for loading and training data (naive implementation :
     alternates between loading and training at each iteration).
 
-    - 'confg': dictionary containing all characteristics of input shape and model.
+    - 'config': dictionary containing all characteristics of input shape and model.
     - 'directories': dictionary containing all needed paths.
     - 'labels': pandas dataframe of all labels, containing a column for name of mp3 file.
     - 'restore': boolean, set to true if training is the continuity of a previous training.
