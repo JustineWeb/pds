@@ -80,12 +80,12 @@ def train_and_load_restore(config, directories, labels, restore=False, restore_f
     train_auc_results = []
 
     # GET NAME OF FILES FOR SONGS TO LOAD
-    # use find_files_group_select which filters songs
-    # which have at least one of the labels and create groups
-    files_by_group = find_files_group_select(data_dir, labels, labels_name, batch_size, sample=sample_size, \
+    # use find_files_batch_select which filters songs
+    # which have at least one of the labels and create batches
+    files_by_batch = find_files_batch_select(data_dir, labels, labels_name, batch_size, sample=sample_size, \
                                              pattern=pattern, sub_dir=train_dir)
 
-    n_groups = len(files_by_group)
+    n_batches = len(files_by_batch)
 
     # INITIALIZE TF MODEL (VARIABLES)
     x, y, net, predictions, loss, reduced_loss, train_op, auc, saver = initialize_tf_model(config)
@@ -130,8 +130,8 @@ def train_and_load_restore(config, directories, labels, restore=False, restore_f
                 loss_values = []
                 auc_results = []
 
-                # Feed songs to the network group by group
-                for count, g in enumerate(files_by_group) :
+                # Feed songs to the network batch by batch
+                for count, g in enumerate(files_by_batch) :
 
                     # Load audio and labels
                     tload0 = time.time()
@@ -153,7 +153,7 @@ def train_and_load_restore(config, directories, labels, restore=False, restore_f
                     auc_results.append(auc_result)
 
                     if (count % 20) == 0 :
-                        print("Group {} done. {} left.".format(count, n_groups-count-1))
+                        print("Group {} done. {} left.".format(count, n_batches-count-1))
 
 
                 train_loss_results.append(loss_values)
@@ -238,12 +238,12 @@ def testing_validing(config, directories, labels, model_ckpt, validation=False) 
     test_auc_results = []
 
     # GET NAME OF FILES FOR SONGS TO LOAD
-    # use find_files_group_select which filters songs
-    # which have at least one of the labels and create groups
-    files_by_group = find_files_group_select(data_dir, labels, labels_name, batch_size, sample=sample_size, \
+    # use find_files_batch_select which filters songs
+    # which have at least one of the labels and create batches
+    files_by_batch = find_files_batch_select(data_dir, labels, labels_name, batch_size, sample=sample_size, \
                                              pattern=pattern, sub_dir=test_dir)
 
-    n_groups = len(files_by_group)
+    n_batches = len(files_by_batch)
 
     # INITIALIZE TF MODEL (VARIABLES)
     x, y, net, predictions, loss, reduced_loss, train_op, auc, _ = initialize_tf_model(config, is_training=False)
@@ -271,8 +271,8 @@ def testing_validing(config, directories, labels, model_ckpt, validation=False) 
         try:
             t0_epoch = time.time()
 
-            # Feed songs to the network group by group
-            for count, g in enumerate(files_by_group) :
+            # Feed songs to the network batch by batch
+            for count, g in enumerate(files_by_batch) :
 
                 # Load audio and labels
                 tload0 = time.time()
@@ -293,7 +293,7 @@ def testing_validing(config, directories, labels, model_ckpt, validation=False) 
 
                 dur = time.time()-t0_epoch
 
-                print("Group {} done. {} left.".format(count, n_groups-count-1))
+                print("Group {} done. {} left.".format(count, n_batches-count-1))
                 print("Time (in sec): {:.2f}, Loss: {:.4f}, AUC : {:.4f}"\
                   .format(dur, loss_value, auc_result))
 

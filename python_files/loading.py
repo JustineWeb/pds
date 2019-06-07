@@ -85,15 +85,15 @@ def find_files_select(directory, labels, labels_name, pattern='*.mp3', sample=No
 
 
 # not used anymore
-def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_dir=None):
+def find_files_batch(directory, batch_size, pattern='*.mp3', sample=None, sub_dir=None):
     '''Recursively finds all files matching the pattern
-    And split them into groups of size groupe_size.
-    Useful for feeding group by group to th network.'''
+    And split them into batchs of size batche_size.
+    Useful for feeding batch by batch to th network.'''
     # subdir sould be a string, for example "abc03",
     # meaning we take data from directories a,b,c,0 and 3
 
     files = []
-    groups = []
+    batches = []
     directories = []
 
     if sub_dir!=None :
@@ -112,33 +112,33 @@ def find_files_group(directory, group_size, pattern='*.mp3', sample=None, sub_di
     total_nb = len(files)
     if sample != None:
         total_nb = sample
-    nb_full_groups, rest = np.divmod(total_nb, group_size)
+    nb_full_batches, rest = np.divmod(total_nb, batch_size)
 
-    for i in range(nb_full_groups) :
-        # Randomization should be added here of files[i:i+group_size]
-        groups.append(files[i * group_size : (i+1) * group_size])
+    for i in range(nb_full_batches) :
+        # Randomization should be added here of files[i:i+batch_size]
+        batches.append(files[i * batch_size : (i+1) * batch_size])
 
-    # handle last group if group_size doesn't divide the total number of files
+    # handle last batch if batch_size doesn't divide the total number of files
     # For now this never happens as the sample size is always made a multiple
     # of the batch size. If one wants to adapt it, it should modify some part
     # of function load_audio_label_aux.
     if rest != 0:
-        groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
-        # "zero-padding" to make the last group in the shape expected by the nn
+        batches.append(files[nb_full_batches * batch_size : nb_full_batches * batch_size + rest])
+        # "zero-padding" to make the last batch in the shape expected by the nn
         # > here we add a None element and when loading we check whether the files
         # name is None and add zeros in that case
-        groups[nb_full_groups] += [FILE_PLACEHOLDER] * (group_size - rest)
+        batches[nb_full_batches] += [FILE_PLACEHOLDER] * (batche_size - rest)
 
-    return groups
+    return batches
 
 # This is the version currently used: a combination of all functionalities
 # provided in the above functions.
-def find_files_group_select(directory, labels, labels_name, group_size, pattern='*.mp3', sample=None, sub_dir=None):
+def find_files_batch_select(directory, labels, labels_name, batch_size, pattern='*.mp3', sample=None, sub_dir=None):
     '''Recursively finds all files matching the pattern,
     which are tagged with at least one of the labels in
     the list labels, given as parameter
-    and split them into groups of size groupe_size.
-    Useful for feeding group by group to th network.'''
+    and split them into batchs of size batche_size.
+    Useful for feeding batch by batch to th network.'''
 
     # subdir sould be a string, for example "abc03",
     # meaning we take data from directories a,b,c,0 and 3 >> useful if we want to separate between
@@ -153,7 +153,7 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
     select_filenames = [s[2:] for s in select_filenames.values]
 
     files = []
-    groups = []
+    batches = []
     directories = []
 
     # iterate over all given subdirectories
@@ -180,25 +180,25 @@ def find_files_group_select(directory, labels, labels_name, group_size, pattern=
 
     if sample != None and sample < total_nb :
         total_nb = sample
-    nb_full_groups, rest = np.divmod(total_nb, group_size)
+    nb_full_batches, rest = np.divmod(total_nb, batch_size)
 
-    for i in range(nb_full_groups) :
-        # Randomization should be added here of files[i:i+group_size]
-        groups.append(files[i * group_size : (i+1) * group_size])
+    for i in range(nb_full_batches) :
+        # Randomization should be added here of files[i:i+batch_size]
+        batches.append(files[i * batch_size : (i+1) * batch_size])
 
-    # handle last group if group_size doesn't divide the total number of files
+    # handle last batch if batch_size doesn't divide the total number of files
     # For now this never happens as the sample size is always made a multiple
     # of the batch size. If one wants to adapt it, it should modify some part
     # of function load_audio_label_aux.
     if rest != 0:
-        groups.append(files[nb_full_groups * group_size : nb_full_groups * group_size + rest])
+        batches.append(files[nb_full_batches * batch_size : nb_full_batches * batch_size + rest])
 
-        # "zero-padding" to make the last group in the shape expected by the nn
+        # "zero-padding" to make the last batch in the shape expected by the nn
         # > here we add a None element and when loading we check whether the files
         # name is None and add zeros in that case
-        groups[nb_full_groups] += [FILE_PLACEHOLDER] * (group_size - rest)
+        batches[nb_full_batches] += [FILE_PLACEHOLDER] * (batch_size - rest)
 
-    return groups
+    return batches
 
 
 def sublabels(labels_name, labels):
